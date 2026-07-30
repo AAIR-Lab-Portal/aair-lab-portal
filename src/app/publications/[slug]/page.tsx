@@ -1,6 +1,6 @@
 // src/app/publications/[slug]/page.tsx
 import { getMarkdownData } from "@/lib/markdown";
-import { getAllPublications } from "@/lib/api";
+import { getAllPublications, Publication } from "@/lib/api";
 
 export async function generateStaticParams() {
     const publications = await getAllPublications();
@@ -20,7 +20,7 @@ export default async function PublicationPost({
     const resolvedParams = await params;
 
     // 3. Now we safely pass the resolved string to the server
-    const paper = await getMarkdownData("_publications", resolvedParams.slug);
+    const paper = (await getMarkdownData("_publications", resolvedParams.slug)) as Publication;
 
     return (
         <article className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100 dark:bg-zinc-900 dark:border-zinc-800">

@@ -1,6 +1,6 @@
 // src/app/members/[slug]/page.tsx
 import { getMarkdownData } from "@/lib/markdown";
-import { getAllMembers } from "@/lib/api";
+import { getAllMembers, Member } from "@/lib/api";
 import Image from "next/image"; // Import the Next.js Image component
 
 export async function generateStaticParams() {
@@ -10,7 +10,7 @@ export async function generateStaticParams() {
 
 export default async function MemberProfile({ params }: { params: Promise<{ slug: string }> }) {
     const resolvedParams = await params;
-    const member = await getMarkdownData("_members", resolvedParams.slug);
+    const member = (await getMarkdownData("_members", resolvedParams.slug)) as Member;
 
     return (
         <article className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 max-w-4xl mx-auto">

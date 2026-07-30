@@ -1,6 +1,6 @@
 // src/app/news/[slug]/page.tsx
 import { getMarkdownData } from "@/lib/markdown";
-import { getAllNews } from "@/lib/api";
+import { getAllNews, NewsItem } from "@/lib/api";
 import Image from "next/image"; // <-- Import Image
 
 export async function generateStaticParams() {
@@ -10,7 +10,7 @@ export async function generateStaticParams() {
 
 export default async function NewsPost({ params }: { params: Promise<{ slug: string }> }) {
     const resolvedParams = await params;
-    const article = await getMarkdownData("_news", resolvedParams.slug);
+    const article = (await getMarkdownData("_news", resolvedParams.slug)) as NewsItem;
 
     return (
         <article className="bg-white dark:bg-zinc-900 p-6 md:p-10 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 max-w-4xl mx-auto">
