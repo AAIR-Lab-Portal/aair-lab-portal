@@ -1,8 +1,10 @@
 ---
 title: "Overcoming RAM Constraints in ESP32 Visual Pipelines"
-author: "Stefan Ngo"
-date: "2026-05-12"
-category: "Edge AI"
+date: "2025-11-02"
+authors: "Mai Tan Ha, Ngo Minh Chau"
+type: "Journal"
+tags: ["Edge Computing", "Hardware"]
+abstract: "Visual processing on microcontrollers is heavily constrained by SRAM. We propose an aggressive frame-buffer quantization strategy that allows standard ESP32 boards to process low-resolution object detection models without external PSRAM modules."
 ---
 
 By deploying optimized neural networks directly onto edge microcontrollers, we achieved sub-100ms latency without relying on external cloud processing. 

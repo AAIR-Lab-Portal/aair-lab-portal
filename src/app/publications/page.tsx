@@ -1,29 +1,23 @@
 // src/app/publications/page.tsx
 import { getAllPublications } from "@/lib/api";
-// Import your new component
-import PublicationCard from "@/components/PublicationCard";
+import PublicationArchive from "@/components/PublicationArchive";
 
 export default async function PublicationsIndex() {
     const publications = await getAllPublications();
 
     return (
-        <div>
-            <h1 className="text-4xl font-extrabold mb-8 text-zinc-900 dark:text-slate-300 tracking-tight">
-                Lab Publications
-            </h1>
+        <div className="max-w-6xl mx-auto space-y-12">
+            <header className="border-b border-zinc-200 dark:border-zinc-800 pb-6">
+                <h1 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
+                    Publications Archive
+                </h1>
+                <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400 font-medium max-w-2xl leading-relaxed">
+                    Explore our archive of peer-reviewed journal articles, conference proceedings, pre-prints, and student thesis work.
+                </p>
+            </header>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                {/* The code is now incredibly clean and easy to read */}
-                {publications.map((paper) => (
-                    <PublicationCard
-                        key={paper.slug}
-                        slug={paper.slug}
-                        title={paper.title}
-                        author={paper.author}
-                        date={paper.date}
-                    />
-                ))}
-            </div>
+            <PublicationArchive allPublications={publications} />
+
         </div>
     );
 }

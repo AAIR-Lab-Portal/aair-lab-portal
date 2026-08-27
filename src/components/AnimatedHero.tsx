@@ -9,7 +9,7 @@ export default function AnimatedHero() {
 
             {/* motion.h1 acts just like an h1, but allows animation instructions */}
             <motion.h1
-                className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tighter mb-6"
+                className="text-5xl md:text-[76px] font-black text-slate-900 tracking-tighter mb-6"
                 initial={{ opacity: 0, y: 20 }} // Start invisible and 20px lower
                 animate={{ opacity: 1, y: 0 }}  // Animate to full visibility and original position
                 transition={{ duration: 0.6, ease: "easeOut" }} // Take 0.6 seconds
@@ -23,8 +23,7 @@ export default function AnimatedHero() {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }} // Delay it so it fades in AFTER the title
             >
-                Pioneering solutions in Retrieval-Augmented Generation (RAG), imbalanced learning,
-                data augmentation, and auto-labeling to build resilient, high-performance AI systems.
+                Advancing AI through foundational machine learning, vision-language models, and robust learning algorithms.
             </motion.p>
 
             <motion.div

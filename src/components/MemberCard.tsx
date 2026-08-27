@@ -12,7 +12,7 @@ interface Props {
 
 export default function MemberCard({ slug, name, role, department, image }: Props) {
     return (
-        <Link href={`/members/${slug}`} className="group block h-full">
+        <Link href={`/members/${slug}`} className="group block h-full max-w-sm">
             <div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm hover:shadow-md hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 text-center flex flex-col items-center h-full">
 
                 {/* --- The Avatar Container --- */}

@@ -6,9 +6,12 @@ import { getAllSlugsFromFolder, getMarkdownData } from "./markdown";
 export interface Publication {
     slug: string;
     title: string;
-    author: string;
-    date: string;
-    category?: string; // The question mark means this field is optional
+    date: string; // Format: YYYY-MM-DD (We will parse the year from this)
+    authors: string;
+    type: "Conference" | "Journal" | "Preprint" | "Thesis";
+    tags: string[]; // e.g., ["ML Foundation", "Vision"]
+    abstract: string;
+    externalLink?: string; // Optional: Link to arXiv or IEEE
     contentHtml: string;
 }
 
@@ -73,9 +76,12 @@ export async function getAllMembers(): Promise<Member[]> {
 export interface Project {
     slug: string;
     title: string;
+    date: string;
     lead: string;
-    status: string;
+    status: "Active" | "Completed" | "Inactive";
+    excerpt?: string;
     tech: string;
+    image?: string;
     contentHtml: string;
 }
 
@@ -114,6 +120,7 @@ export interface NewsItem {
     date: string;
     author: string;
     image: string;
+    excerpt?: string;
     contentHtml: string;
 }
 

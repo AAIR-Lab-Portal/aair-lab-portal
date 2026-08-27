@@ -1,5 +1,5 @@
 ---
-name: "Chau"
+name: "Ngo Minh Chau"
 role: "Undergraduate Researcher"
 department: "Computer Science"
 email: "chau@vgu.edu.vn"

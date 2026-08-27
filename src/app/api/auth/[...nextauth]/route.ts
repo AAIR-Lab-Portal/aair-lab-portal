@@ -1,9 +1,29 @@
 // src/app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth";
+import GithubProvider from "next-auth/providers/github";
 
-// Initialize the NextAuth handler with our configuration
-const handler = NextAuth(authOptions);
+const handler = NextAuth({
+    providers: [
+        GithubProvider({
+            clientId: process.env.GITHUB_CLIENT_ID as string,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+        }),
+    ],
+    callbacks: {
+        async signIn({ user }) {
+            // THE VAULT BOUNCER: Only these exact GitHub emails are allowed in.
+            // Replace these with your actual lab members' GitHub emails.
+            const allowedEmails = [
+                "mchau43ioe@gmail.com",
+            ];
 
-// Next.js App Router requires us to explicitly export GET and POST methods
+            if (user.email && allowedEmails.includes(user.email)) {
+                return true; // Access Granted
+            }
+
+            return false; // Access Denied (Redirects to an error page)
+        },
+    },
+});
+
 export { handler as GET, handler as POST };
