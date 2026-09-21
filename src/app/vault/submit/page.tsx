@@ -1,211 +1,206 @@
 // src/app/vault/submit/page.tsx
 "use client";
 
-import { useState } from "react";
-import { UploadCloud, CheckCircle2, Loader2, ExternalLink, Lock, Globe } from "lucide-react";
+import { useState, useRef } from "react";
+import { useSession } from "next-auth/react";
+import { UploadCloud, AlertCircle, ShieldCheck, Image as ImageIcon } from "lucide-react";
 
 export default function SubmitPage() {
-    const [docType, setDocType] = useState("Publication");
-    const [isInternal, setIsInternal] = useState(false);
+    const { data: session } = useSession();
+    const [scope, setScope] = useState<"Public" | "Internal">("Public");
     const [title, setTitle] = useState("");
-    const [authorIdsInput, setAuthorIdsInput] = useState("");
-    const [tagsInput, setTagsInput] = useState("");
     const [content, setContent] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [prUrl, setPrUrl] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title.trim() || !content.trim()) {
-            setError("Title and content are required.");
+    const [authors, setAuthors] = useState("");
+    const [publicType, setPublicType] = useState("Publication");
+    const [internalType, setInternalType] = useState("Tutorial");
+
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imageError, setImageError] = useState("");
+    const [imageCaption, setImageCaption] = useState(""); // NEW: Header Image Caption
+
+    const [inlineImages, setInlineImages] = useState<{ name: string, base64: string }[]>([]);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        setImageError("");
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            setImageError("File size exceeds 2MB limit.");
+            setImageFile(null);
+            return;
+        }
+        setImageFile(file);
+    };
+
+    const handleInlineImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert("Inline image exceeds 2MB limit.");
             return;
         }
 
-        setIsSubmitting(true);
-        setError(null);
-        setPrUrl(null);
+        const cleanFilename = `inline-${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+        const markdownTag = `\n![Type your caption here](/images/${cleanFilename})\n`;
 
-        const authorIds = authorIdsInput
-            .split(",")
-            .map((id) => parseInt(id.trim(), 10))
-            .filter((n) => !isNaN(n));
+        const buffer = await file.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString("base64");
+        setInlineImages(prev => [...prev, { name: cleanFilename, base64 }]);
 
-        const tags = tagsInput
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean);
+        const textarea = textareaRef.current;
+        if (textarea) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const newContent = content.substring(0, start) + markdownTag + content.substring(end);
+            setContent(newContent);
 
-        try {
-            const res = await fetch("/api/github/submit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title,
-                    content,
-                    type: docType,
-                    isInternal,
-                    authorIds,
-                    tags,
-                }),
-            });
-
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-
-            setPrUrl(data.prUrl);
-            setTitle("");
-            setContent("");
-            setAuthorIdsInput("");
-            setTagsInput("");
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsSubmitting(false);
+            setTimeout(() => {
+                textarea.selectionStart = textarea.selectionEnd = start + markdownTag.length;
+                textarea.focus();
+            }, 0);
+        } else {
+            setContent((prev) => prev + markdownTag);
         }
     };
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        let imageBase64 = null;
+        if (imageFile) {
+            const buffer = await imageFile.arrayBuffer();
+            imageBase64 = Buffer.from(buffer).toString("base64");
+        }
+
+        const payload = {
+            scope,
+            title,
+            content,
+            type: scope === "Internal" ? internalType : publicType,
+            author: scope === "Internal" ? session?.user?.name || "Internal User" : authors,
+            headerImage: { name: imageFile?.name, base64: imageBase64, caption: imageCaption }, // Updated payload
+            inlineImages
+        };
+
+        console.log("Transmitting payload to API:", payload);
+    };
+
     return (
-        <div className="space-y-10 max-w-3xl">
-            <header className="border-b border-zinc-200 dark:border-zinc-800 pb-6">
-                <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
-                    Submission Portal
+        <div className="max-w-3xl mx-auto py-12">
+            <header className="mb-10 border-b border-zinc-200 dark:border-zinc-800 pb-8">
+                <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter mb-2">
+                    Content Submission
                 </h1>
-                <p className="mt-2 text-zinc-600 dark:text-zinc-400 font-medium">
-                    Draft items for automatic staging and administrative PR creation.
+                <p className="text-zinc-600 dark:text-zinc-400 font-medium">
+                    Draft and route new documents to the GitHub repository.
                 </p>
             </header>
 
-            {prUrl && (
-                <div className="p-6 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <form onSubmit={handleSubmit} className="space-y-8">
+
+                <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <button type="button" onClick={() => setScope("Public")} className={`flex-1 py-3 text-sm font-black uppercase tracking-widest rounded-lg transition-colors ${scope === "Public" ? "bg-white dark:bg-zinc-800 text-blue-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}>
+                        Public Facing
+                    </button>
+                    <button type="button" onClick={() => setScope("Internal")} className={`flex-1 py-3 text-sm font-black uppercase tracking-widest rounded-lg transition-colors ${scope === "Internal" ? "bg-white dark:bg-zinc-800 text-emerald-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}>
+                        Internal Vault
+                    </button>
+                </div>
+
+                <div className="space-y-6 bg-zinc-50 dark:bg-zinc-900/50 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800">
                     <div>
-                        <h3 className="text-emerald-800 dark:text-emerald-400 font-black tracking-tight flex items-center gap-2">
-                            <CheckCircle2 className="w-5 h-5" /> Staged Successfully
-                        </h3>
-                        <p className="text-emerald-600 dark:text-emerald-500 font-medium text-sm mt-1">
-                            Pull Request opened on repository.
-                        </p>
+                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Document Title</label>
+                        <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-zinc-900 dark:text-zinc-100" placeholder="Enter the title..." />
                     </div>
-                    <a href={prUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm">
-                        Review Pull Request <ExternalLink className="w-4 h-4" />
-                    </a>
+
+                    {scope === "Public" ? (
+                        <>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Content Type</label>
+                                <select value={publicType} onChange={(e) => setPublicType(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-zinc-900 dark:text-zinc-100">
+                                    <option value="Publication">Publication</option>
+                                    <option value="Project">Project</option>
+                                    <option value="News">News Item</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Author / Lead Names (Comma Separated)</label>
+                                <input type="text" required value={authors} onChange={(e) => setAuthors(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-zinc-900 dark:text-zinc-100" placeholder="e.g., Le Lam Son, Ngo Minh Chau" />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Internal Document Type</label>
+                                <select value={internalType} onChange={(e) => setInternalType(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-zinc-900 dark:text-zinc-100">
+                                    <option value="Tutorial">Tutorial / Guide</option>
+                                    <option value="Announcement">Lab Announcement</option>
+                                    <option value="Resource">Shared Resource</option>
+                                </select>
+                            </div>
+                            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-3">
+                                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                                <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                                    Author automatically mapped to your session: {session?.user?.name || "Pending..."}.
+                                </span>
+                            </div>
+                        </>
+                    )}
                 </div>
-            )}
 
-            {error && (
-                <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 font-bold rounded-xl text-sm">
-                    {error}
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 rounded-2xl shadow-sm">
-
-                {/* Scope Selector */}
-                <div className="space-y-3">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Destination Scope</label>
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            type="button"
-                            onClick={() => setIsInternal(false)}
-                            className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border text-sm font-bold transition-all ${!isInternal
-                                    ? "border-blue-600 bg-blue-50/50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-500"
-                                    : "border-zinc-200 dark:border-zinc-800 text-zinc-500"
-                                }`}
-                        >
-                            <Globe className="w-4 h-4" /> Public Portal
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setIsInternal(true)}
-                            className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border text-sm font-bold transition-all ${isInternal
-                                    ? "border-emerald-600 bg-emerald-50/50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-500"
-                                    : "border-zinc-200 dark:border-zinc-800 text-zinc-500"
-                                }`}
-                        >
-                            <Lock className="w-4 h-4" /> Internal Vault Only
-                        </button>
+                <div className="bg-zinc-50 dark:bg-zinc-900/50 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-6">
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Header Image (Optional)</label>
+                        <div className="flex items-center gap-6">
+                            <label className="flex flex-col items-center justify-center w-full max-w-xs h-32 border-2 border-zinc-300 dark:border-zinc-700 border-dashed rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <UploadCloud className="w-8 h-8 text-zinc-400 mb-2" />
+                                    <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400">Click to upload</p>
+                                    <p className="text-xs text-zinc-500">SVG, PNG, JPG (Max 2MB)</p>
+                                </div>
+                                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                            </label>
+                            {imageFile && !imageError && <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Ready: {imageFile.name}</div>}
+                            {imageError && <div className="text-sm font-bold text-red-600 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {imageError}</div>}
+                        </div>
                     </div>
+                    {/* NEW: Caption field unlocks when a file is selected */}
+                    {imageFile && (
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Header Image Caption</label>
+                            <input type="text" value={imageCaption} onChange={(e) => setImageCaption(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-zinc-900 dark:text-zinc-100" placeholder="Add a descriptive caption for the hero banner..." />
+                        </div>
+                    )}
                 </div>
 
-                {/* Document Type Selector */}
-                <div className="space-y-3">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Classification</label>
-                    <div className="grid grid-cols-3 gap-4">
-                        {["Publication", "Project", "News"].map((type) => (
-                            <button
-                                type="button"
-                                key={type}
-                                onClick={() => setDocType(type)}
-                                className={`p-3 rounded-xl border text-sm font-bold transition-all ${docType === type
-                                        ? "border-blue-600 bg-blue-50/50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-500"
-                                        : "border-zinc-200 dark:border-zinc-800 text-zinc-500"
-                                    }`}
-                            >
-                                {type}
-                            </button>
-                        ))}
+                <div>
+                    <div className="flex items-center justify-between mb-3">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Markdown Body</label>
+                        <label className="cursor-pointer text-xs font-bold bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 shadow-sm">
+                            <ImageIcon className="w-3.5 h-3.5" /> Insert Inline Image
+                            <input type="file" className="hidden" accept="image/*" onChange={handleInlineImage} />
+                        </label>
                     </div>
-                </div>
 
-                {/* Title */}
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Title</label>
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="e.g. Robust Feature Extraction in Edge Networks"
-                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-zinc-100"
+                    <textarea
+                        ref={textareaRef}
+                        required
+                        rows={12}
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        className="w-full px-4 py-4 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm text-zinc-900 dark:text-zinc-100 shadow-sm"
+                        placeholder="Write your markdown content here..."
                     />
                 </div>
 
-                {/* Relational Author IDs and Tags */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Author IDs (Comma-separated)</label>
-                        <input
-                            type="text"
-                            value={authorIdsInput}
-                            onChange={(e) => setAuthorIdsInput(e.target.value)}
-                            placeholder="e.g. 101, 104"
-                            className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl font-mono text-sm text-zinc-900 dark:text-zinc-100"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Tags (Comma-separated)</label>
-                        <input
-                            type="text"
-                            value={tagsInput}
-                            onChange={(e) => setTagsInput(e.target.value)}
-                            placeholder="e.g. Vision-Language, Edge Computing"
-                            className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl font-mono text-sm text-zinc-900 dark:text-zinc-100"
-                        />
-                    </div>
+                <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                    <button type="submit" className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black tracking-widest uppercase rounded-xl hover:bg-zinc-800 dark:hover:bg-white transition-colors shadow-sm">
+                        Propose Submission
+                    </button>
                 </div>
-
-                {/* Content Body */}
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Document Body (Markdown & LaTeX)</label>
-                    <textarea
-                        rows={10}
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        placeholder="Write abstract, methodology, results, or guide instructions here..."
-                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl font-mono text-sm text-zinc-900 dark:text-zinc-100 resize-none"
-                    ></textarea>
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm"
-                >
-                    {isSubmitting ? (
-                        <><Loader2 className="w-5 h-5 animate-spin" /> Submitting to GitHub...</>
-                    ) : (
-                        <><UploadCloud className="w-5 h-5" /> Dispatch Pull Request</>
-                    )}
-                </button>
             </form>
         </div>
     );

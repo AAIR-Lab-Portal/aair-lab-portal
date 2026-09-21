@@ -3,22 +3,28 @@ import { getAllProjects } from "@/lib/api";
 import Link from "next/link";
 import Image from "next/image";
 import { Network, Eye, Layers, BarChart } from "lucide-react";
+import ActiveProjectsClient from "@/components/ActiveProjectsClient";
 
 export default async function ProjectsIndex() {
     const allProjects = await getAllProjects();
-
-    // Isolate only the active initiatives for this page
     const activeProjects = allProjects.filter(p => p.status === "Active");
 
+    const canvasIcons: Record<string, React.ElementType> = {
+        "ML Foundation": Network,
+        "Vision-Language Models": Eye,
+        "Imbalanced Learning": BarChart,
+        "Complementary Label Learning": Layers,
+    };
+
     const researchFields = [
-        { title: "ML Foundation", icon: Network, desc: "Developing core algorithmic architectures and mathematical proofs for next-generation learning models." },
+        { title: "Machine Learning Foundation", icon: Network, desc: "Developing core algorithmic architectures and mathematical proofs for next-generation learning models." },
         { title: "Vision-Language Models", icon: Eye, desc: "Bridging computer vision and natural language processing for multimodal reasoning systems." },
         { title: "Imbalanced Learning", icon: BarChart, desc: "Engineering robust pipelines to handle extreme data scarcity and class imbalance in real-world datasets." },
         { title: "Complementary Label Learning", icon: Layers, desc: "Advancing weak supervision techniques by learning from negative constraints rather than absolute ground truths." },
     ];
 
     return (
-        <div className="max-w-6xl mx-auto space-y-20">
+        <div className="max-w-6xl mx-auto space-y-20 py-4">
 
             {/* 1. Fields of Research */}
             <section>
@@ -32,7 +38,7 @@ export default async function ProjectsIndex() {
                         const Icon = field.icon;
                         return (
                             <div key={field.title} className="p-8 bg-white dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                                <Icon className="w-8 h-8 text-blue-600 mb-4" />
+                                <Icon className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-4" />
                                 <h3 className="text-xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight mb-2">
                                     {field.title}
                                 </h3>
@@ -46,7 +52,7 @@ export default async function ProjectsIndex() {
             </section>
 
             {/* 2. Recent Publications Highlight */}
-            <section id="recent-publications" className="bg-blue-600 rounded-3xl p-8 md:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-lg">
+            <section id="recent-publications" className="bg-blue-600 dark:bg-blue-700 rounded-3xl p-8 md:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-lg">
                 <div className="max-w-2xl">
                     <h2 className="text-3xl font-black tracking-tighter mb-4">Peer-Reviewed Output</h2>
                     <p className="text-blue-100 font-medium leading-relaxed mb-6">
@@ -58,43 +64,8 @@ export default async function ProjectsIndex() {
                 </div>
             </section>
 
-            {/* 3. Active Research Initiatives (Static Responsive Grid) */}
-            <section>
-                <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight mb-8">
-                    Active Initiatives
-                </h2>
-
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {activeProjects.map((project) => (
-                        <Link href={`/projects/${project.slug}`} key={project.slug} className="group flex flex-col bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-300 h-full">
-
-                            {/* Top: 16:9 Image Container with Hover Zoom */}
-                            <div className="relative w-full aspect-video bg-zinc-100 dark:bg-zinc-800 overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
-                                {project.image ? (
-                                    <Image src={project.image} alt={project.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-sm tracking-widest font-bold uppercase">
-                                        No Image Data
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Bottom: Text Content */}
-                            <div className="p-6 flex flex-col flex-grow">
-                                <div className="text-xs font-bold tracking-widest uppercase text-emerald-600 dark:text-emerald-500 mb-3">
-                                    {project.status}
-                                </div>
-                                <h3 className="text-xl font-extrabold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-3 tracking-tight leading-tight">
-                                    {project.title}
-                                </h3>
-                                <p className="text-zinc-600 dark:text-zinc-400 text-sm font-medium leading-relaxed line-clamp-3">
-                                    {project.excerpt || "View technical specifications and project details..."}
-                                </p>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            </section>
+            {/* 3. Active Research Initiatives */}
+            <ActiveProjectsClient projects={activeProjects} />
 
             {/* 4. Project Archive CTA */}
             <section className="mt-16 border-t border-zinc-200 dark:border-zinc-800 pt-12 flex flex-col items-center text-center">

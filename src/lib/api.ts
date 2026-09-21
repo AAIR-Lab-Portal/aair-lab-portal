@@ -1,52 +1,10 @@
 // src/lib/api.ts
 import { getAllSlugsFromFolder, getMarkdownData } from "./markdown";
 
-// 1. The Blueprint (TypeScript Interface)
-// This tells our app exactly what a "Publication" is supposed to look like.
-export interface Publication {
-    slug: string;
-    title: string;
-    date: string; // Format: YYYY-MM-DD (We will parse the year from this)
-    authors: string;
-    type: "Conference" | "Journal" | "Preprint" | "Thesis";
-    tags: string[]; // e.g., ["ML Foundation", "Vision"]
-    abstract: string;
-    externalLink?: string; // Optional: Link to arXiv or IEEE
-    contentHtml: string;
-}
-
-// 2. The Librarian Function
-export async function getAllPublications(): Promise<Publication[]> {
-    // Grab all the file names from our database folder
-    const slugs = getAllSlugsFromFolder("_publications");
-
-    // Loop through every slug and tell the worker (markdown.ts) to read it.
-    // Because reading files takes time, we create an array of "Promises".
-    const promises = slugs.map((slug) => getMarkdownData("_publications", slug));
-
-    // Promise.all tells the server: "Read all 50 files AT THE SAME TIME, 
-    // and don't move to the next line of code until every single one is finished."
-    const rawPublications = await Promise.all(promises);
-
-    // Tell TypeScript to trust us that the data matches our Publication interface
-    const publications = rawPublications as Publication[];
-
-    // Sort them by date (Newest first)
-    const sortedPublications = publications.sort((paperA, paperB) => {
-        if (paperA.date < paperB.date) {
-            return 1;
-        } else {
-            return -1;
-        }
-    });
-
-    return sortedPublications;
-}
-
-// 1. Define the specific shape of a Member
 export interface Member {
     slug: string;
     name: string;
+    id?: number;
     role: string;
     department: string;
     email: string;
@@ -54,66 +12,33 @@ export interface Member {
     contentHtml: string;
 }
 
-// 2. The Member Librarian
-export async function getAllMembers(): Promise<Member[]> {
-    const slugs = getAllSlugsFromFolder("_members");
-
-    const promises = slugs.map((slug) => getMarkdownData("_members", slug));
-    const rawMembers = await Promise.all(promises);
-
-    const members = rawMembers as Member[];
-
-    // Note: We sort members alphabetically by name, instead of by date
-    const sortedMembers = members.sort((a, b) => {
-        if (a.name > b.name) return 1;
-        return -1;
-    });
-
-    return sortedMembers;
+export interface Publication {
+    slug: string;
+    title: string;
+    date: string;
+    authors: string;
+    type: string;
+    tags: string[];
+    abstract: string;
+    externalLink?: string;
+    pdf_url?: string;
+    toc?: { level: number; text: string; id: string }[];
+    contentHtml: string;
 }
 
-// 1. Define the specific shape of a Project
 export interface Project {
     slug: string;
     title: string;
     date: string;
     lead: string;
-    status: "Active" | "Completed" | "Inactive";
-    excerpt?: string;
+    status: string;
     tech: string;
+    canvas_tags?: string[];
     image?: string;
+    excerpt?: string;
     contentHtml: string;
 }
 
-// 2. The Project Librarian
-export async function getAllProjects(): Promise<Project[]> {
-    // Grab all the file names from the _projects folder
-    const slugs = getAllSlugsFromFolder("_projects");
-
-    // Read all the files concurrently
-    const promises = slugs.map((slug) => getMarkdownData("_projects", slug));
-    const rawProjects = await Promise.all(promises);
-
-    const projects = rawProjects as Project[];
-
-    // Sort Logic: 
-    // 1st Priority: "Active" projects always go to the top.
-    // 2nd Priority: If both have the same status, sort them alphabetically by title.
-    const sortedProjects = projects.sort((projectA, projectB) => {
-        // If A is Active and B is not, A goes first (-1)
-        if (projectA.status === "Active" && projectB.status !== "Active") return -1;
-        // If B is Active and A is not, B goes first (1)
-        if (projectA.status !== "Active" && projectB.status === "Active") return 1;
-
-        // If they have the exact same status, sort alphabetically
-        if (projectA.title > projectB.title) return 1;
-        return -1;
-    });
-
-    return sortedProjects;
-}
-
-// 1. Define the News Interface
 export interface NewsItem {
     slug: string;
     title: string;
@@ -124,15 +49,115 @@ export interface NewsItem {
     contentHtml: string;
 }
 
-// 2. The News Fetcher
+export async function getAllMembers(): Promise<Member[]> {
+    const slugs = getAllSlugsFromFolder("_members");
+    const promises = slugs.map((slug) => getMarkdownData("_members", slug));
+    const rawMembers = await Promise.all(promises);
+
+    const members: Member[] = rawMembers.map((raw: any) => ({
+        slug: raw.slug,
+        name: raw.name || "Unknown",
+        id: raw.id,
+        role: raw.role || "",
+        department: raw.department || "",
+        email: raw.email || "",
+        image: raw.image,
+        contentHtml: raw.contentHtml || "",
+    }));
+
+    return members.sort((a, b) => (a.name > b.name ? 1 : -1));
+}
+
+export async function getAllPublications(): Promise<Publication[]> {
+    const slugs = getAllSlugsFromFolder("_publications");
+    const promises = slugs.map((slug) => getMarkdownData("_publications", slug));
+    const rawPublications = await Promise.all(promises);
+
+    const publications: Publication[] = rawPublications.map((raw: any) => ({
+        slug: raw.slug,
+        title: raw.title || "Untitled",
+        date: raw.date || "2026-01-01",
+        authors: raw.authors || "AAIR Lab",
+        type: raw.type || "Journal",
+        tags: raw.tags || [],
+        abstract: raw.abstract || "",
+        externalLink: raw.externalLink,
+        pdf_url: raw.pdf_url,
+        toc: raw.toc || [],
+        contentHtml: raw.contentHtml || "",
+    }));
+
+    return publications.sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+export async function getAllProjects(): Promise<Project[]> {
+    const slugs = getAllSlugsFromFolder("_projects");
+    const promises = slugs.map((slug) => getMarkdownData("_projects", slug));
+    const rawProjects = await Promise.all(promises);
+
+    const projects: Project[] = rawProjects.map((raw: any) => ({
+        slug: raw.slug,
+        title: raw.title || "Untitled",
+        date: raw.date || "",
+        lead: raw.lead || "AAIR Lab",
+        status: raw.status || "Inactive",
+        tech: raw.tech || "",
+        canvas_tags: raw.canvas_tags || [],
+        image: raw.image,
+        excerpt: raw.excerpt,
+        contentHtml: raw.contentHtml || "",
+    }));
+
+    return projects.sort((a, b) => (a.title > b.title ? 1 : -1));
+}
+
 export async function getAllNews(): Promise<NewsItem[]> {
     const slugs = getAllSlugsFromFolder("_news");
-
     const promises = slugs.map((slug) => getMarkdownData("_news", slug));
     const rawNews = await Promise.all(promises);
 
-    const news = rawNews as NewsItem[];
+    const news: NewsItem[] = rawNews.map((raw: any) => ({
+        slug: raw.slug,
+        title: raw.title || "Untitled",
+        date: raw.date || "",
+        author: raw.author || "AAIR Lab",
+        image: raw.image || "",
+        excerpt: raw.excerpt,
+        contentHtml: raw.contentHtml || "",
+    }));
 
-    // Sort by date, newest first
     return news.sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+export interface InternalDoc {
+    slug: string;
+    title: string;
+    date: string;
+    author: string;
+    type: string; // "Tutorial", "Announcement", "Resource"
+    excerpt?: string;
+    contentHtml: string;
+}
+
+export async function getAllInternalDocs(): Promise<InternalDoc[]> {
+    try {
+        const slugs = getAllSlugsFromFolder("_internal");
+        const promises = slugs.map((slug) => getMarkdownData("_internal", slug));
+        const rawDocs = await Promise.all(promises);
+
+        const docs: InternalDoc[] = rawDocs.map((raw: any) => ({
+            slug: raw.slug,
+            title: raw.title || "Untitled Document",
+            date: raw.date || "",
+            author: raw.author || "AAIR Lab",
+            type: raw.type || "Resource",
+            excerpt: raw.excerpt || "",
+            contentHtml: raw.contentHtml || "",
+        }));
+
+        return docs.sort((a, b) => (a.date < b.date ? 1 : -1));
+    } catch (error) {
+        // Fallback if the _internal folder doesn't exist yet
+        return [];
+    }
 }

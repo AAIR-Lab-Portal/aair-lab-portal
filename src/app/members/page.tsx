@@ -1,11 +1,11 @@
 // src/app/members/page.tsx
 import { getAllMembers } from "@/lib/api";
 import MemberCard from "@/components/MemberCard";
+import ExecutiveMemberCard from "@/components/ExecutiveMemberCard";
 
 export default async function MembersIndex() {
     const allMembers = await getAllMembers();
 
-    // The Filtering Engine: Now based dynamically on the 'role' field
     const principalInvestigator = allMembers.filter(m =>
         m.role.toLowerCase().includes("principal investigator") ||
         m.role.toLowerCase().includes("director")
@@ -16,51 +16,53 @@ export default async function MembersIndex() {
         m.role.toLowerCase().includes("co-pi")
     );
 
-    // Everyone else who wasn't caught by the first two filters
-    const researchers = allMembers.filter(m =>
-        !principalInvestigator.includes(m) && !labManager.includes(m)
-    );
+    // Filter out leadership, then mathematically sort remaining members by ID
+    const researchers = allMembers
+        .filter(m => !principalInvestigator.includes(m) && !labManager.includes(m))
+        .sort((a, b) => (Number(a.id) || 999) - (Number(b.id) || 999));
 
     return (
-        <div className="max-w-6xl mx-auto space-y-16">
+        <div className="max-w-6xl mx-auto space-y-12">
 
             <header className="border-b border-zinc-200 dark:border-zinc-800 pb-6">
-                <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
+                <h1 className="text-5xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
                     Our Team
                 </h1>
             </header>
 
-            {/* Tier 1: Principal Investigator */}
-            {principalInvestigator.length > 0 && (
-                <section>
-                    <h2 className="text-xs font-bold tracking-widest uppercase text-blue-600 dark:text-blue-500 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-2 inline-block">
-                        Principal Investigator
-                    </h2>
-                    <div className="grid gap-6 md:grid-cols-3">
-                        {principalInvestigator.map(m => <MemberCard key={m.slug} {...m} />)}
-                    </div>
-                </section>
-            )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
-            {/* Tier 2: Lab Management */}
-            {labManager.length > 0 && (
-                <section>
-                    <h2 className="text-xs font-bold tracking-widest uppercase text-blue-600 dark:text-blue-500 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-2 inline-block">
-                        Lab Management
-                    </h2>
-                    <div className="grid gap-6 md:grid-cols-3">
-                        {labManager.map(m => <MemberCard key={m.slug} {...m} />)}
-                    </div>
-                </section>
-            )}
+                {principalInvestigator.length > 0 && (
+                    <section className="flex flex-col h-full">
+                        {/* w-full removed to create a tight, loose underline */}
+                        <h2 className="w-fit text-xs font-bold tracking-widest uppercase text-blue-600 dark:text-blue-500 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-2 inline-block">
+                            Principal Investigator
+                        </h2>
+                        <div className="flex flex-col gap-6">
+                            {principalInvestigator.map(m => <ExecutiveMemberCard key={m.slug} {...m} />)}
+                        </div>
+                    </section>
+                )}
 
-            {/* Tier 3: Researchers */}
+                {labManager.length > 0 && (
+                    <section className="flex flex-col h-full">
+                        <h2 className="w-fit text-xs font-bold tracking-widest uppercase text-blue-600 dark:text-blue-500 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-2 inline-block">
+                            Lab Manager
+                        </h2>
+                        <div className="flex flex-col gap-6">
+                            {labManager.map(m => <ExecutiveMemberCard key={m.slug} {...m} />)}
+                        </div>
+                    </section>
+                )}
+
+            </div>
+
             {researchers.length > 0 && (
                 <section>
                     <h2 className="text-xs font-bold tracking-widest uppercase text-blue-600 dark:text-blue-500 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-2 inline-block">
                         Researchers & Members
                     </h2>
-                    <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+                    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                         {researchers.map(m => <MemberCard key={m.slug} {...m} />)}
                     </div>
                 </section>

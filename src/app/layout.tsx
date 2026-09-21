@@ -33,6 +33,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${themeClass} ${sourceCodePro.variable}`}>
+      <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" />
+      </head>
       <body className="font-mono min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 flex flex-col transition-colors duration-300">
         <ThemeEnforcer />
         <Navigation />

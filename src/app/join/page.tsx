@@ -24,13 +24,33 @@ export default function JoinPage() {
                 </h2>
 
                 <div className="space-y-6 text-zinc-700 dark:text-zinc-300">
-                    <p className="font-medium leading-relaxed">
-                        To apply for a research position or student thesis supervision, please send an email to our lab management team.
+                    <p className="font-medium leading-relaxed mb-2">
+                        To apply for a research position or student thesis supervision, please send an email to our lab management team: <br></br>
                     </p>
+                    <ul className="space-y-1 pl-1 font-medium">
+                        <li className="flex items-center gap-2">
+                            <span className="text-zinc-400 dark:text-zinc-600">•</span>
+                            <span>
+                                <strong className="font-bold text-zinc-900 dark:text-zinc-100">Prof. Son</strong> -{" "}
+                                <a href="mailto:son.ll@vgu.edu.vn" className="text-blue-600 dark:text-blue-400 hover:underline">
+                                    son.ll@vgu.edu.vn
+                                </a>
+                            </span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span className="text-zinc-400 dark:text-zinc-600">•</span>
+                            <span>
+                                <strong className="font-bold text-zinc-900 dark:text-zinc-100">Mr. Ha</strong> -{" "}
+                                <a href="mailto:maitanhaksdtvt6@gmail.com" className="text-blue-600 dark:text-blue-400 hover:underline">
+                                    maitanhaksdtvt6@gmail.com
+                                </a>
+                            </span>
+                        </li>
+                    </ul>
 
                     <div className="bg-zinc-50 dark:bg-zinc-950 p-6 rounded-xl border border-zinc-100 dark:border-zinc-800">
                         <h3 className="font-bold mb-3 tracking-tight">Please include the following in your email:</h3>
-                        <ul className="list-disc list-inside space-y-3 text-sm md:text-base marker:text-blue-500 font-medium leading-relaxed">
+                        <ul className="list-disc list-inside space-y-2 text-sm md:text-base marker:text-blue-500 font-medium leading-relaxed">
                             <li>A brief introduction about yourself and your academic background.</li>
                             <li>Your CV or Resume (PDF format).</li>
                             <li>A short paragraph detailing which of our active research fields interests you the most.</li>

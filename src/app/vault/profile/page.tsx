@@ -2,110 +2,136 @@
 "use client";
 
 import { useState } from "react";
-import { Save, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { UploadCloud, AlertCircle, UserCircle } from "lucide-react";
 
 export default function ProfileEditorPage() {
-    const [displayName, setDisplayName] = useState("");
-    const [avatarUrl, setAvatarUrl] = useState("");
+    const { data: session } = useSession();
+
     const [bio, setBio] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [prUrl, setPrUrl] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [department, setDepartment] = useState("Computer Science");
+    const [role, setRole] = useState("Research Assistant");
+    const [email, setEmail] = useState("");
 
-    const handleSave = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        setError(null);
-        setPrUrl(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageError, setImageError] = useState("");
 
-        try {
-            const res = await fetch("/api/github/profile", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ displayName, avatarUrl, bio }),
-            });
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        setImageError("");
+        if (!file) return;
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-
-            setPrUrl(data.prUrl);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsSubmitting(false);
+        if (file.size > 5 * 1024 * 1024) {
+            setImageError("File size exceeds 5MB limit.");
+            setImageFile(null);
+            setImagePreview(null);
+            return;
         }
+
+        setImageFile(file);
+        // Generate a temporary browser URL to preview the frame crop
+        setImagePreview(URL.createObjectURL(file));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        let imageBase64 = null;
+        if (imageFile) {
+            const buffer = await imageFile.arrayBuffer();
+            imageBase64 = Buffer.from(buffer).toString("base64");
+        }
+
+        const payload = {
+            targetUser: session?.user?.name,
+            bio, department, role, email,
+            avatarFile: imageBase64,
+            avatarName: imageFile?.name
+        };
+
+        console.log("Transmitting profile update payload:", payload);
     };
 
     return (
-        <div className="space-y-10 max-w-2xl">
-            <header className="border-b border-zinc-200 dark:border-zinc-800 pb-6">
-                <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
-                    Profile Settings
-                </h1>
-                <p className="mt-2 text-zinc-600 dark:text-zinc-400 font-medium">
-                    Customize your display avatar, handle, and lab bio.
-                </p>
+        <div className="max-w-3xl mx-auto py-12">
+            <header className="mb-10 border-b border-zinc-200 dark:border-zinc-800 pb-8">
+                <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter mb-2">Profile Editor</h1>
+                <p className="text-zinc-600 dark:text-zinc-400 font-medium">Update your public-facing lab profile and avatar.</p>
             </header>
 
-            {prUrl && (
-                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl flex items-center justify-between">
-                    <p className="text-emerald-700 dark:text-emerald-400 text-sm font-bold flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" /> Staged update for admin approval
-                    </p>
-                    <a href={prUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-emerald-600 dark:text-emerald-400 underline flex items-center gap-1">
-                        View PR <ExternalLink className="w-3 h-3" />
-                    </a>
-                </div>
-            )}
-
-            {error && (
-                <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 font-bold rounded-xl text-sm">
-                    {error}
-                </div>
-            )}
-
-            <form onSubmit={handleSave} className="space-y-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 rounded-2xl">
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Public Display Handle</label>
-                    <input
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        placeholder="e.g. Minh Chau"
-                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-zinc-100"
-                    />
+            <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-3 mb-8">
+                    <UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+                    <span className="text-sm font-bold text-blue-800 dark:text-blue-300">
+                        Editing profile for authenticated user: {session?.user?.name || "Pending..."}.
+                    </span>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Avatar Image URL</label>
-                    <input
-                        type="text"
-                        value={avatarUrl}
-                        onChange={(e) => setAvatarUrl(e.target.value)}
-                        placeholder="https://example.com/pfp.jpg"
-                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-zinc-100"
-                    />
+                {/* Interactive Preview Frame */}
+                <div className="bg-zinc-50 dark:bg-zinc-900/50 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Profile Picture</label>
+                    <div className="flex items-center gap-8">
+                        <label className="relative flex flex-col items-center justify-center w-36 h-36 border-2 border-zinc-300 dark:border-zinc-700 border-dashed rounded-full cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors shrink-0 overflow-hidden bg-white dark:bg-zinc-950 shadow-sm group">
+                            {imagePreview ? (
+                                <>
+                                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <p className="text-[10px] font-bold text-white uppercase tracking-widest">Change</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center">
+                                    <UploadCloud className="w-6 h-6 text-zinc-400 mb-1" />
+                                    <p className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Upload</p>
+                                </div>
+                            )}
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                        </label>
+                        <div>
+                            <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-1">Preview Avatar Crop</p>
+                            <p className="text-xs font-medium text-zinc-500 mb-3">Your image will be cropped to this circle. SVG, PNG, JPG (Max 5MB).</p>
+                            {imageError && <div className="text-sm font-bold text-red-600 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {imageError}</div>}
+                        </div>
+                    </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">Public Bio</label>
-                    <textarea
-                        rows={4}
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        placeholder="Short overview of current projects and research topics."
-                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 resize-none"
-                    ></textarea>
+                <div className="space-y-6 bg-zinc-50 dark:bg-zinc-900/50 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                    {/* ... (Keep the exact same role/department/email inputs from before) */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Role / Title</label>
+                            <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-zinc-900 dark:text-zinc-100">
+                                <option value="Lab Director">Lab Director</option>
+                                <option value="Principal Investigator">Principal Investigator</option>
+                                <option value="Postdoctoral Researcher">Postdoctoral Researcher</option>
+                                <option value="Research Assistant">Research Assistant</option>
+                                <option value="System Administrator">System Administrator</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Department</label>
+                            <select value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-zinc-900 dark:text-zinc-100">
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Electrical Engineering">Electrical Engineering</option>
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Data Science">Data Science</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Public Contact Email</label>
+                        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-zinc-900 dark:text-zinc-100" placeholder="e.g., researcher@aair.lab" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Biography (Markdown Supported)</label>
+                        <textarea required rows={6} value={bio} onChange={(e) => setBio(e.target.value)} className="w-full px-4 py-4 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm text-zinc-900 dark:text-zinc-100" placeholder="Describe your research interests..." />
+                    </div>
                 </div>
 
-                <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-3 rounded-xl font-bold transition-all shadow-sm"
-                >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    Save Configuration
-                </button>
+                <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                    <button type="submit" className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black tracking-widest uppercase rounded-xl hover:bg-zinc-800 dark:hover:bg-white transition-colors shadow-sm">Submit Profile Update</button>
+                </div>
             </form>
         </div>
     );

@@ -1,13 +1,30 @@
 // src/app/news/page.tsx
 import { getAllNews } from "@/lib/api";
+import NewsCard from "@/components/NewsCard";
 import Link from "next/link";
-import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export default async function NewsIndex() {
-    const news = await getAllNews();
+export default async function NewsIndex({
+    searchParams,
+}: {
+    searchParams: { page?: string };
+}) {
+    const allNews = await getAllNews();
+
+    // --- Pagination Engine ---
+    const ITEMS_PER_PAGE = 12;
+    const currentPage = Number(searchParams?.page) || 1;
+    const totalPages = Math.ceil(allNews.length / ITEMS_PER_PAGE);
+
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const displayedNews = allNews.slice(startIndex, endIndex);
+
+    // Generate an array of page numbers [1, 2, 3] for the UI
+    const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
     return (
-        <div className="max-w-4xl mx-auto space-y-12">
+        <div className="max-w-6xl mx-auto space-y-12 py-4">
             {/* Page Header */}
             <header className="border-b border-zinc-200 dark:border-zinc-800 pb-6">
                 <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
@@ -15,36 +32,71 @@ export default async function NewsIndex() {
                 </h1>
             </header>
 
-            {/* The Single-Column List */}
-            <div className="flex flex-col space-y-8">
-                {news.map((item) => (
-                    <Link href={`/news/${item.slug}`} key={item.slug} className="group block">
-                        <article className="flex flex-col md:flex-row gap-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200">
-
-                            {/* Left Side: Thumbnail Image */}
-                            <div className="relative w-full md:w-64 h-48 md:h-auto shrink-0 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-                                {item.image && (
-                                    <Image src={item.image} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                                )}
-                            </div>
-
-                            {/* Right Side: Text Content */}
-                            <div className="flex flex-col justify-center py-2 pr-4">
-                                <div className="text-xs font-bold tracking-widest uppercase text-blue-600 dark:text-blue-500 mb-2">
-                                    {item.date} • {item.author}
-                                </div>
-                                <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                    {item.title}
-                                </h2>
-                                <p className="text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed line-clamp-3">
-                                    {item.excerpt || "Read the full announcement..."}
-                                </p>
-                            </div>
-
-                        </article>
-                    </Link>
+            {/* Strict Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayedNews.map((item) => (
+                    <NewsCard
+                        key={item.slug}
+                        slug={item.slug}
+                        title={item.title}
+                        date={item.date}
+                        author={item.author}
+                        image={item.image}
+                        excerpt={item.excerpt}
+                    />
                 ))}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-8 border-t border-zinc-200 dark:border-zinc-800 mt-12">
+
+                    {/* Previous Button */}
+                    {currentPage > 1 ? (
+                        <Link
+                            href={`/news?page=${currentPage - 1}`}
+                            className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </Link>
+                    ) : (
+                        <span className="p-2 rounded-lg text-zinc-300 dark:text-zinc-700 cursor-not-allowed">
+                            <ChevronLeft className="w-5 h-5" />
+                        </span>
+                    )}
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center gap-1">
+                        {pageNumbers.map((num) => (
+                            <Link
+                                key={num}
+                                href={`/news?page=${num}`}
+                                className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${currentPage === num
+                                        ? "bg-blue-600 text-white shadow-sm"
+                                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                    }`}
+                            >
+                                {num}
+                            </Link>
+                        ))}
+                    </div>
+
+                    {/* Next Button */}
+                    {currentPage < totalPages ? (
+                        <Link
+                            href={`/news?page=${currentPage + 1}`}
+                            className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </Link>
+                    ) : (
+                        <span className="p-2 rounded-lg text-zinc-300 dark:text-zinc-700 cursor-not-allowed">
+                            <ChevronRight className="w-5 h-5" />
+                        </span>
+                    )}
+
+                </div>
+            )}
         </div>
     );
 }

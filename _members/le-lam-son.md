@@ -1,8 +1,10 @@
 ---
+id: 101
+slug: "le-lam-son"
 name: "Le Lam Son"
 role: "Principal Investigator"
-department: "AI Research"
+department: "Computer Science Engineering"
 email: "son.ll@vgu.edu.vn"
+image: "/images/members/le-lam-son.png"
 ---
-
-Lead researcher focusing on algorithmic optimization and imbalanced learning frameworks.
+Le Lam Son directs the AAIR Lab, specializing in core machine learning foundations, vision-language models, and imbalanced learning architectures.

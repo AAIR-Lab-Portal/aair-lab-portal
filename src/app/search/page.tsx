@@ -1,5 +1,5 @@
 // src/app/search/page.tsx
-import { getAllProjects, getAllNews, getAllPublications } from "@/lib/api";
+import { getAllProjects, getAllNews, getAllPublications, getAllMembers } from "@/lib/api";
 import OmniSearchEngine from "@/components/OmniSearchEngine";
 import { Search } from "lucide-react";
 
@@ -15,10 +15,11 @@ export type UnifiedResult = {
 };
 
 export default async function GlobalSearchPage() {
-  const [projects, news, publications] = await Promise.all([
+  const [projects, news, publications, members] = await Promise.all([
     getAllProjects(),
     getAllNews(),
     getAllPublications(),
+    getAllMembers()
   ]);
 
   // Schema Normalization with Defensive Fallbacks (|| "")
@@ -68,13 +69,10 @@ export default async function GlobalSearchPage() {
           <h1 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter mb-2">
             Search
           </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 font-medium text-lg">
-            Query {searchIndex.length} indexed records across research, news, and publications.
-          </p>
         </div>
       </header>
 
-      <OmniSearchEngine initialData={searchIndex} />
+      <OmniSearchEngine initialData={searchIndex} members={members}/>
     </div>
   );
 }

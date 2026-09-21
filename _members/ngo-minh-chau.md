@@ -1,8 +1,10 @@
 ---
+id: 104
+slug: "ngo-minh-chau"
 name: "Ngo Minh Chau"
-role: "Undergraduate Researcher"
-department: "Computer Science"
-email: "chau@vgu.edu.vn"
+role: "Researcher"
+department: "Computer Science Engineering"
+email: "10425164@student.vgu.edu.vn"
 image: "/images/members/chau.png"
 ---
 

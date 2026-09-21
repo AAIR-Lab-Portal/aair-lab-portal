@@ -19,8 +19,8 @@ export default function Navigation() {
             <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
 
                 <Link href="/" className="flex items-center gap-3">
-                    <Image src="/favicon.ico" alt="AAIR Lab Logo" width={32} height={32} className="rounded-sm" />
-                    <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                    <Image src="/logo.svg" alt="AAIR Lab Logo" width={32} height={32} className="rounded-sm" />
+                    <span className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
                         AAIR<span className="text-blue-600 dark:text-blue-500">.LAB</span>
                     </span>
                 </Link>

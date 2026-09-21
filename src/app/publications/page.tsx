@@ -1,9 +1,10 @@
 // src/app/publications/page.tsx
-import { getAllPublications } from "@/lib/api";
+import { getAllMembers, getAllPublications } from "@/lib/api";
 import PublicationArchive from "@/components/PublicationArchive";
 
 export default async function PublicationsIndex() {
     const publications = await getAllPublications();
+    const allMembers = await getAllMembers();
 
     return (
         <div className="max-w-6xl mx-auto space-y-12">
@@ -16,7 +17,7 @@ export default async function PublicationsIndex() {
                 </p>
             </header>
 
-            <PublicationArchive allPublications={publications} />
+            <PublicationArchive allPublications={publications} allMembers={allMembers} />
 
         </div>
     );
