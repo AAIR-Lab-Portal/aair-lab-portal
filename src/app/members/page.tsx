@@ -34,12 +34,14 @@ export default async function MembersIndex() {
 
                 {principalInvestigator.length > 0 && (
                     <section className="flex flex-col h-full">
-                        {/* w-full removed to create a tight, loose underline */}
                         <h2 className="w-fit text-xs font-bold tracking-widest uppercase text-blue-600 dark:text-blue-500 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-2 inline-block">
                             Principal Investigator
                         </h2>
                         <div className="flex flex-col gap-6">
-                            {principalInvestigator.map(m => <ExecutiveMemberCard key={m.slug} {...m} />)}
+                            {/* OVERRIDE: Convert ID to string */}
+                            {principalInvestigator.map(m => (
+                                <ExecutiveMemberCard key={m.slug} {...m} id={m.id ? String(m.id) : undefined} />
+                            ))}
                         </div>
                     </section>
                 )}
@@ -50,7 +52,10 @@ export default async function MembersIndex() {
                             Lab Manager
                         </h2>
                         <div className="flex flex-col gap-6">
-                            {labManager.map(m => <ExecutiveMemberCard key={m.slug} {...m} />)}
+                            {/* OVERRIDE: Convert ID to string */}
+                            {labManager.map(m => (
+                                <ExecutiveMemberCard key={m.slug} {...m} id={m.id ? String(m.id) : undefined} />
+                            ))}
                         </div>
                     </section>
                 )}
@@ -63,7 +68,10 @@ export default async function MembersIndex() {
                         Researchers & Members
                     </h2>
                     <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {researchers.map(m => <MemberCard key={m.slug} {...m} />)}
+                        {/* OVERRIDE: Convert ID to string (using fallback for MemberCard) */}
+                        {researchers.map(m => (
+                            <MemberCard key={m.slug} {...m} id={m.id ? String(m.id) : ""} />
+                        ))}
                     </div>
                 </section>
             )}
