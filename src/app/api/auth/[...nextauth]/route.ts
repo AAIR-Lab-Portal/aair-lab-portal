@@ -31,9 +31,7 @@ const handler = NextAuth({
                 const orgs = await res.json();
 
                 // THE VAULT BOUNCER: Check if they belong to the lab's exact GitHub Organization.
-                // IMPORTANT: Replace "your-github-org-name" with your actual Organization's login name!
-                // Example: If your org URL is github.com/aair-lab, type "aair-lab" below.
-                const isLabMember = orgs.some((org: any) => org.login === "your-github-org-name");
+                const isLabMember = orgs.some((org: any) => org.login === "aair-lab-portal");
 
                 if (isLabMember) {
                     return true; // Access Granted!
