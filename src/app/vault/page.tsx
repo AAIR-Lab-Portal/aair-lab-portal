@@ -23,7 +23,7 @@ export default async function VaultDashboard() {
                 </p>
             </header>
 
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-zinc-900 dark:bg-zinc-800/80 border border-zinc-800 dark:border-indigo-500/40 rounded-2xl hover:border-indigo-500/80 hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:scale-[1.01] transition-all shadow-md group">
+            <a href="https://github.com/AAIR-Lab-Portal/aair-lab-portal" target="_blank" rel="noreferrer" className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-zinc-900 dark:bg-zinc-800/80 border border-zinc-800 dark:border-indigo-500/40 rounded-2xl hover:border-indigo-500/80 hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:scale-[1.01] transition-all shadow-md group">
                 <div className="flex items-center gap-4 mb-4 sm:mb-0">
                     <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center shrink-0">
                         <GitPullRequest className="w-6 h-6 text-indigo-400" />

@@ -123,7 +123,7 @@ export default function SubmitPage() {
                                 <select value={publicType} onChange={(e) => setPublicType(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-zinc-900 dark:text-zinc-100">
                                     <option value="Publication">Publication</option>
                                     <option value="Project">Project</option>
-                                    <option value="News">News Item</option>
+                                    <option value="News">News Article</option>
                                 </select>
                             </div>
                             <div>
@@ -138,7 +138,7 @@ export default function SubmitPage() {
                                 <select value={internalType} onChange={(e) => setInternalType(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-zinc-900 dark:text-zinc-100">
                                     <option value="Tutorial">Tutorial / Guide</option>
                                     <option value="Announcement">Lab Announcement</option>
-                                    <option value="Resource">Shared Resource</option>
+                                    <option value="Resource">Shared Resources</option>
                                 </select>
                             </div>
                             <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-3">

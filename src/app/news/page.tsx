@@ -27,9 +27,12 @@ export default async function NewsIndex({
         <div className="max-w-6xl mx-auto space-y-12 py-4">
             {/* Page Header */}
             <header className="border-b border-zinc-200 dark:border-zinc-800 pb-6">
-                <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
+                <h1 className="text-5xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
                     Lab News
                 </h1>
+                <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
+                    The latest stories, project updates, and achievements from our research community.
+                </p>
             </header>
 
             {/* Strict Grid Layout */}
@@ -72,8 +75,8 @@ export default async function NewsIndex({
                                 key={num}
                                 href={`/news?page=${num}`}
                                 className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${currentPage === num
-                                        ? "bg-blue-600 text-white shadow-sm"
-                                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                    ? "bg-blue-600 text-white shadow-sm"
+                                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                                     }`}
                             >
                                 {num}

@@ -28,6 +28,9 @@ export default async function MembersIndex() {
                 <h1 className="text-5xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
                     Our Team
                 </h1>
+                <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400 font-medium max-w-[700px] leading-relaxed">
+                    The community of researchers, students, and engineers collaborating on our lab’s artificial intelligence initiatives.
+                </p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
