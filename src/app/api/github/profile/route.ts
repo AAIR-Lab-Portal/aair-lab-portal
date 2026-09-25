@@ -10,69 +10,70 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { displayName, avatarUrl, bio } = await req.json();
+        const { displayName, bio, department, role, email, avatarUrl, avatarName } = await req.json();
 
         const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
         const owner = process.env.GITHUB_OWNER!;
         const repo = process.env.GITHUB_REPO!;
 
-        const userEmailSanitized = session.user.email.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-        const filePath = `_profiles/${userEmailSanitized}.json`;
-        const branchName = `profile-update-${userEmailSanitized}-${Date.now()}`;
-
-        let existingSha: string | undefined = undefined;
-        try {
-            const { data } = await octokit.rest.repos.getContent({
-                owner,
-                repo,
-                path: filePath,
-                ref: "heads/main",
-            });
-            if (!Array.isArray(data) && "sha" in data) {
-                existingSha = data.sha;
-            }
-        } catch {
-            // File does not exist yet
-        }
-
-        const profileData = {
-            accountEmail: session.user.email,
-            displayName: displayName.trim(),
-            avatarUrl: avatarUrl.trim(),
-            bio: bio.trim(),
-            updatedAt: new Date().toISOString(),
-        };
+        // Generate a clean slug for the member file
+        const filename = displayName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+        const mdPath = `_members/${filename}.md`;
+        const branchName = `profile-update-${filename}-${Date.now()}`;
 
         const { data: refData } = await octokit.rest.git.getRef({
-            owner,
-            repo,
-            ref: "heads/main",
+            owner, repo, ref: "heads/main",
         });
 
         await octokit.rest.git.createRef({
-            owner,
-            repo,
-            ref: `refs/heads/${branchName}`,
-            sha: refData.object.sha,
+            owner, repo, ref: `refs/heads/${branchName}`, sha: refData.object.sha,
         });
 
+        let imageFrontmatter = "";
+
+        // FIXED: Properly save the avatar image into the public/images/members folder
+        if (avatarUrl && avatarName) {
+            const ext = avatarName.split('.').pop() || "jpg";
+            const imagePath = `public/images/members/${filename}-avatar.${ext}`;
+
+            await octokit.rest.repos.createOrUpdateFileContents({
+                owner, repo,
+                path: imagePath,
+                message: `Profile Update: Add avatar for ${displayName}`,
+                content: avatarUrl,
+                branch: branchName,
+            });
+
+            imageFrontmatter = `\nimage: "/images/members/${filename}-avatar.${ext}"`;
+        }
+
+        // Construct standard Member Markdown Frontmatter
+        const frontmatter = [
+            "---",
+            `name: "${displayName.replace(/"/g, '\\"')}"`,
+            `role: "${role}"`,
+            `department: "${department}"`,
+            `email: "${email}"`,
+            imageFrontmatter.trim(),
+            "---",
+            "",
+            bio,
+        ].filter(Boolean).join("\n");
+
         await octokit.rest.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: filePath,
-            message: `Profile Update: ${session.user.email}`,
-            content: Buffer.from(JSON.stringify(profileData, null, 2)).toString("base64"),
+            owner, repo,
+            path: mdPath,
+            message: `Profile Update: ${displayName}`,
+            content: Buffer.from(frontmatter).toString("base64"),
             branch: branchName,
-            ...(existingSha ? { sha: existingSha } : {}),
         });
 
         const { data: prData } = await octokit.rest.pulls.create({
-            owner,
-            repo,
+            owner, repo,
             title: `Profile Customization: ${displayName}`,
             head: branchName,
             base: "main",
-            body: `Automated update for user handle \`${session.user.email}\`.`,
+            body: `### Profile Update Request\n- **Target File:** \`${mdPath}\`\n- **Authenticated User:** \`${session.user.email}\`\n- **Avatar Attached:** ${avatarUrl ? "Yes" : "No"}`,
         });
 
         return NextResponse.json({ success: true, prUrl: prData.html_url });

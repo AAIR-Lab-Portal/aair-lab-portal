@@ -17,10 +17,12 @@ export default function SubmitPage() {
 
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imageError, setImageError] = useState("");
-    const [imageCaption, setImageCaption] = useState(""); // NEW: Header Image Caption
+    const [imageCaption, setImageCaption] = useState("");
 
     const [inlineImages, setInlineImages] = useState<{ name: string, base64: string }[]>([]);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -44,12 +46,13 @@ export default function SubmitPage() {
             return;
         }
 
-        const cleanFilename = `inline-${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-        const markdownTag = `\n![Type your caption here](/images/${cleanFilename})\n`;
+        // GENERATE TEMPORARY PLACEHOLDER FOR BACKEND PARSER
+        const tempName = `TEMP-INLINE-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "")}`;
+        const markdownTag = `\n![Type your caption here](/images/${tempName})\n`;
 
         const buffer = await file.arrayBuffer();
         const base64 = Buffer.from(buffer).toString("base64");
-        setInlineImages(prev => [...prev, { name: cleanFilename, base64 }]);
+        setInlineImages(prev => [...prev, { name: tempName, base64 }]);
 
         const textarea = textareaRef.current;
         if (textarea) {
@@ -69,6 +72,8 @@ export default function SubmitPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
+
         let imageBase64 = null;
         if (imageFile) {
             const buffer = await imageFile.arrayBuffer();
@@ -81,33 +86,43 @@ export default function SubmitPage() {
             content,
             type: scope === "Internal" ? internalType : publicType,
             author: scope === "Internal" ? session?.user?.name || "Internal User" : authors,
-            headerImage: { name: imageFile?.name, base64: imageBase64, caption: imageCaption }, // Updated payload
+            headerImage: { name: imageFile?.name, base64: imageBase64, caption: imageCaption },
             inlineImages
         };
 
-        console.log("Transmitting payload to API:", payload);
+        try {
+            const res = await fetch("/api/github/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                alert(`Success! Pull Request created at: ${data.prUrl}`);
+                setTitle(""); setContent(""); setAuthors(""); setImageFile(null); setInlineImages([]); setImageCaption("");
+            } else {
+                alert(`GitHub API Error: ${data.error}`);
+            }
+        } catch (error) {
+            alert("A network error occurred while communicating with the server.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
         <div className="max-w-3xl mx-auto py-12">
             <header className="mb-10 border-b border-zinc-200 dark:border-zinc-800 pb-8">
-                <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter mb-2">
-                    Content Submission
-                </h1>
-                <p className="text-zinc-600 dark:text-zinc-400 font-medium">
-                    Draft and route new documents to the GitHub repository.
-                </p>
+                <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter mb-2">Content Submission</h1>
+                <p className="text-zinc-600 dark:text-zinc-400 font-medium">Draft and route new documents to the GitHub repository.</p>
             </header>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-
                 <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                    <button type="button" onClick={() => setScope("Public")} className={`flex-1 py-3 text-sm font-black uppercase tracking-widest rounded-lg transition-colors ${scope === "Public" ? "bg-white dark:bg-zinc-800 text-blue-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}>
-                        Public Facing
-                    </button>
-                    <button type="button" onClick={() => setScope("Internal")} className={`flex-1 py-3 text-sm font-black uppercase tracking-widest rounded-lg transition-colors ${scope === "Internal" ? "bg-white dark:bg-zinc-800 text-emerald-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}>
-                        Internal Vault
-                    </button>
+                    <button type="button" onClick={() => setScope("Public")} className={`flex-1 py-3 text-sm font-black uppercase tracking-widest rounded-lg transition-colors ${scope === "Public" ? "bg-white dark:bg-zinc-800 text-blue-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}>Public Facing</button>
+                    <button type="button" onClick={() => setScope("Internal")} className={`flex-1 py-3 text-sm font-black uppercase tracking-widest rounded-lg transition-colors ${scope === "Internal" ? "bg-white dark:bg-zinc-800 text-emerald-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}>Internal Vault</button>
                 </div>
 
                 <div className="space-y-6 bg-zinc-50 dark:bg-zinc-900/50 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800">
@@ -127,7 +142,9 @@ export default function SubmitPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Author / Lead Names (Comma Separated)</label>
+                                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">
+                                    {publicType === "Project" ? "Project Leads (Comma Separated)" : "Author Names (Comma Separated)"}
+                                </label>
                                 <input type="text" required value={authors} onChange={(e) => setAuthors(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-zinc-900 dark:text-zinc-100" placeholder="e.g., Le Lam Son, Ngo Minh Chau" />
                             </div>
                         </>
@@ -138,7 +155,7 @@ export default function SubmitPage() {
                                 <select value={internalType} onChange={(e) => setInternalType(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-zinc-900 dark:text-zinc-100">
                                     <option value="Tutorial">Tutorial / Guide</option>
                                     <option value="Announcement">Lab Announcement</option>
-                                    <option value="Resource">Shared Resources</option>
+                                    <option value="Resource">Shared Resource</option>
                                 </select>
                             </div>
                             <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-3">
@@ -167,7 +184,6 @@ export default function SubmitPage() {
                             {imageError && <div className="text-sm font-bold text-red-600 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {imageError}</div>}
                         </div>
                     </div>
-                    {/* NEW: Caption field unlocks when a file is selected */}
                     {imageFile && (
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Header Image Caption</label>
@@ -184,21 +200,16 @@ export default function SubmitPage() {
                             <input type="file" className="hidden" accept="image/*" onChange={handleInlineImage} />
                         </label>
                     </div>
-
-                    <textarea
-                        ref={textareaRef}
-                        required
-                        rows={12}
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        className="w-full px-4 py-4 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm text-zinc-900 dark:text-zinc-100 shadow-sm"
-                        placeholder="Write your markdown content here..."
-                    />
+                    <textarea ref={textareaRef} required rows={12} value={content} onChange={(e) => setContent(e.target.value)} className="w-full px-4 py-4 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm text-zinc-900 dark:text-zinc-100 shadow-sm" placeholder="Write your markdown content here..." />
                 </div>
 
                 <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800">
-                    <button type="submit" className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black tracking-widest uppercase rounded-xl hover:bg-zinc-800 dark:hover:bg-white transition-colors shadow-sm">
-                        Propose Submission
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full py-4 bg-blue-600 text-white font-black tracking-widest uppercase rounded-xl hover:bg-blue-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/30 active:translate-y-0 disabled:opacity-50 disabled:bg-zinc-600 disabled:cursor-not-allowed transition-all duration-200"
+                    >
+                        {isSubmitting ? "Transmitting to GitHub..." : "Propose Submission"}
                     </button>
                 </div>
             </form>

@@ -17,6 +17,8 @@ export default function ProfileEditorPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageError, setImageError] = useState("");
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         setImageError("");
@@ -30,12 +32,12 @@ export default function ProfileEditorPage() {
         }
 
         setImageFile(file);
-        // Generate a temporary browser URL to preview the frame crop
         setImagePreview(URL.createObjectURL(file));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
 
         let imageBase64 = null;
         if (imageFile) {
@@ -44,13 +46,31 @@ export default function ProfileEditorPage() {
         }
 
         const payload = {
-            targetUser: session?.user?.name,
+            displayName: session?.user?.name || "Internal User",
             bio, department, role, email,
-            avatarFile: imageBase64,
+            avatarUrl: imageBase64,
             avatarName: imageFile?.name
         };
 
-        console.log("Transmitting profile update payload:", payload);
+        try {
+            const res = await fetch("/api/github/profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                alert(`Success! Profile update sent for review: ${data.prUrl}`);
+            } else {
+                alert(`GitHub API Error: ${data.error}`);
+            }
+        } catch (error) {
+            alert("A network error occurred while communicating with the server.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -68,7 +88,6 @@ export default function ProfileEditorPage() {
                     </span>
                 </div>
 
-                {/* Interactive Preview Frame */}
                 <div className="bg-zinc-50 dark:bg-zinc-900/50 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800">
                     <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Profile Picture</label>
                     <div className="flex items-center gap-8">
@@ -97,7 +116,6 @@ export default function ProfileEditorPage() {
                 </div>
 
                 <div className="space-y-6 bg-zinc-50 dark:bg-zinc-900/50 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-                    {/* ... (Keep the exact same role/department/email inputs from before) */}
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Role / Title</label>
@@ -130,7 +148,13 @@ export default function ProfileEditorPage() {
                 </div>
 
                 <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800">
-                    <button type="submit" className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black tracking-widest uppercase rounded-xl hover:bg-zinc-800 dark:hover:bg-white transition-colors shadow-sm">Submit Profile Update</button>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full py-4 bg-blue-600 text-white font-black tracking-widest uppercase rounded-xl hover:bg-blue-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/30 active:translate-y-0 disabled:opacity-50 disabled:bg-zinc-600 disabled:cursor-not-allowed transition-all duration-200"
+                    >
+                        {isSubmitting ? "Transmitting to GitHub..." : "Submit Profile Update"}
+                    </button>
                 </div>
             </form>
         </div>
